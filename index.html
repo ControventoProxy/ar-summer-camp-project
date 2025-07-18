@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Summer Camp 2025 AR</title>
+    <title>Caccia al Tesoro AR</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/aframe.prod.js"></script>
 
@@ -37,6 +37,13 @@
       #startButton:hover {
         background-color: #45a049;
       }
+
+      /* Rende invisibile il pulsante di default di A-Frame per i permessi */
+      /* Ma lo lasciamo esistere per la sua logica interna */
+      .a-enter-ar-button {
+          visibility: hidden !important;
+          pointer-events: none !important; /* Non deve essere cliccabile */
+      }
     </style>
   </head>
   <body style="margin: 0; overflow: hidden;">
@@ -48,7 +55,7 @@
       vr-mode-ui="enabled: false; vr-button: false;"
       device-orientation-permission-ui="enabled: false"
       antialias="true"
-      ar-button="enabled: false;" >
+      ar-button="enabled: true;" >
 
       <a-assets>
           <a-asset-item id="myTarget" src="./targets.mind"></a-asset-item>
@@ -87,36 +94,48 @@
         const startButton = document.getElementById('startButton');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // Imposta 'autoStart: false' sulla scena MindAR per avvio manuale
-        sceneEl.setAttribute('mindar-image-system', 'autoStart: false;');
+        // Imposta 'autoStart: false' sulla scena MindAR per avvio manuale (già fatto in a-entity)
+        // sceneEl.setAttribute('mindar-image-system', 'autoStart: false;'); // Non serve qui, già nell'HTML
 
-        // Listener per il click sul pulsante
+        // Gestione del pulsante Avvia AR
         startButton.addEventListener('click', function() {
           loadingOverlay.style.display = 'none'; // Nasconde l'overlay
 
-          // Rimuove e riaggiunge il componente per un avvio più pulito (tentativo di risolvere context lost)
-          sceneEl.removeAttribute('mindar-image-system');
-          // Breve ritardo per permettere al browser di "respirare"
-          setTimeout(() => {
-            sceneEl.setAttribute('mindar-image-system', 'imageTargetSrc: #myTarget; showStats: false; autoStart: true; warmupTolerance: 10; missTolerance: 10; maxTrack: 3;');
-            // Aggiungi un piccolo ritardo prima di provare l'avvio della camera per Chrome
-            setTimeout(() => {
-                 // Questo non è strettamente necessario se autoStart:true funziona, ma per sicurezza.
-                 // sceneEl.components['mindar-image'].start();
-            }, 500); // 500ms di ritardo
-          }, 100); // 100ms di ritardo
+          // Tentativo di avviare MindAR. Questo dovrebbe innescare la richiesta permessi
+          // se non è già stata concessa per la sessione.
+          if (sceneEl.components['mindar-image']) {
+            sceneEl.components['mindar-image'].start();
+          } else {
+             // Fallback per browser che non avviano automaticamente.
+             // Innesca il click sul pulsante di default di A-Frame (ora invisibile)
+             const arButton = document.querySelector('.a-enter-ar-button');
+             if (arButton) {
+                 arButton.click();
+             } else {
+                 console.error("Pulsante AR di A-Frame non trovato per l'avvio.");
+                 loadingOverlay.style.display = 'flex';
+                 loadingOverlay.querySelector('p').textContent = "Errore: Impossibile avviare AR. Riprova.";
+             }
+          }
         });
 
-        // Eventi di stato del sistema AR (per debug)
+        // Eventi di stato del sistema AR (per debug e gestione overlay)
         sceneEl.addEventListener('arReady', (event) => {
           console.log("AR System ready!");
-          // Non nascondiamo l'overlay qui, lo fa il click del bottone
+          loadingOverlay.style.display = 'none'; // Assicurati che l'overlay sia nascosto se AR è pronto
         });
 
         sceneEl.addEventListener('arError', (event) => {
           console.log("AR System error:", event);
           loadingOverlay.style.display = 'flex'; // Ri-mostra l'overlay in caso di errore
           loadingOverlay.querySelector('p').textContent = "Errore AR! Tocca per riprovare.";
+        });
+
+        // Nasconde l'overlay se la scena è già in modalità AR all'avvio (utile dopo un ricarica)
+        sceneEl.addEventListener('loaded', () => {
+            if (sceneEl.is('ar-mode')) {
+                loadingOverlay.style.display = 'none';
+            }
         });
       });
     </script>
