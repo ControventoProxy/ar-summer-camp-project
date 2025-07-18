@@ -61,7 +61,7 @@
           <a-asset-item id="myTarget" src="./targets.mind"></a-asset-item>
       </a-assets>
 
-      <a-entity mindar-image-system="imageTargetSrc: #myTarget; showStats: false; autoStart: false; warmupTolerance: 10; missTolerance: 10; maxTrack: 3;">
+      <a-entity mindar-image-system="imageTargetSrc: #myTarget; showStats: false; autoStart: false; warmupTolerance: 10; missTolerance: 10; maxTrack: 3; cameraFacingMode: 'environment'; videoSettings: { facingMode: 'environment', width: 1280, height: 720 };">
 
           <a-entity mindar-image-target="targetIndex: 0">
               <a-box position="0 0.5 0" rotation="0 45 0" color="red"></a-box>
